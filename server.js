@@ -91,8 +91,8 @@ http.listen(port, function () {
     }
 
     // database name
-    global.db = client.db("social_app");
-    console.log("Database connected");
+    global.db = client.db("iOS-App");
+    console.log("Connected to " + global.db.databaseName);
 
     contacts.init(app);
     chats.init(app);
@@ -492,7 +492,7 @@ http.listen(port, function () {
       const start = request.fields.start;
       const end = request.fields.end;
       const description = request.fields.description;
-      const pdp = request.fields.pdp;
+      const pde = request.fields.pde;
 
       const createdAt = new Date().getTime();
 
@@ -501,7 +501,7 @@ http.listen(port, function () {
           status: "error",
           message: "Please enter all values.",
         });
-
+        console.log("Please enter all values of this event.");
         return;
       }
 
@@ -534,7 +534,7 @@ http.listen(port, function () {
         start: start,
         end: end,
         description: description,
-        pdp: pdp,
+        pde: pde,
         createdAt: createdAt,
       });
 
@@ -556,6 +556,7 @@ http.listen(port, function () {
         status: "success",
         message: "Event has been created.",
       });
+      console.log("Event has been created.");
     });
 
     app.get("/getevent", async function (request, result) {
