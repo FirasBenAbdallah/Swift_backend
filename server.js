@@ -15,7 +15,6 @@ const MongoClient = mongodb.MongoClient;
 
 // each Mongo document's unique ID
 const ObjectId = mongodb.ObjectId;
-
 // Add headers before the routes are defined
 app.use(function (req, res, next) {
   // Website you wish to allow to connect
@@ -46,7 +45,7 @@ const expressFormidable = require("express-formidable");
 
 // setting the middleware
 app.use(expressFormidable());
-app.use("/uploads", express.static(__dirname + "/uploads"));
+
 const bcryptjs = require("bcryptjs");
 
 // JWT used for authentication
@@ -61,10 +60,19 @@ const chats = require("./modules/chats");
 const nodemailer = require("nodemailer");
 const { KeyObject } = require("crypto");
 const { isKeyObject } = require("util/types");
-const nodemailerFrom = "doit4sim3@gmail.com";
+const nodemailerFrom = "contactvidoc@gmail.com"; //"doit4sim3@gmail.com";
 const transport = nodemailer.createTransport({
-  // host: "smtp.mailtrap.io",
-  // port: 2525,
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // true pour TLS
+  auth: {
+    user: "contactvidoc@gmail.com",
+    pass: "jdamnkrgupsizehj",
+  },
+});
+/* const transport = nodemailer.createTransport({
+ /*  host: "smtp.gmail.com",
+  port: 2525, 
   service: "gmail",
   auth: {
     // user: "a8ecad9759966f",
@@ -73,7 +81,7 @@ const transport = nodemailer.createTransport({
     pass: "fqvcjyqtowvhaydq",
     // "ufmtxmtemtpqwdkd"
   },
-});
+}); */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 global.apiUrl = "http://localhost:3000";
@@ -486,17 +494,45 @@ http.listen(port, function () {
       console.log("Account has been created.");
     });
 
-    app.post("/addevent", async function (request, result) {
-      const name = request.fields.name;
-      const address = request.fields.address;
-      const start = request.fields.start;
-      const end = request.fields.end;
-      const description = request.fields.description;
-      const pde = request.fields.pde;
-
+    const mongoose = require("mongoose");
+    const Publication = mongoose.model("Event", {
+      name: {
+        type: String,
+      },
+      address: {
+        type: String,
+      },
+      start: {
+        type: String,
+      },
+      end: {
+        type: String,
+      },
+      description: {
+        type: String,
+      },
+      pde: {
+        type: String,
+      },
+    });
+    app.post("/addevent", async (request, result) => {
+      const publication = new Publication({
+        name: request.fields.name,
+        address: request.fields.address,
+        start: request.fields.start,
+        end: request.fields.end,
+        description: request.fields.description,
+        pde: request.params.pde,
+      });
       const createdAt = new Date().getTime();
 
-      if (!name || !address || !start || !end || !description) {
+      if (
+        !publication.name ||
+        !publication.address ||
+        !publication.start ||
+        !publication.end ||
+        !publication.description
+      ) {
         result.json({
           status: "error",
           message: "Please enter all values.",
@@ -504,54 +540,15 @@ http.listen(port, function () {
         console.log("Please enter all values of this event.");
         return;
       }
-
-      // check if phone already exists
-      // const user = await db.collection("users").findOne({
-      //     phone: phone
-      // })
-
-      // if (user != null) {
-      //     result.json({
-      //         status: "error",
-      //         message: "phone already exists."
-      //     })
-
-      //     return
-      // }
-
-      // const salt = bcryptjs.genSaltSync(10)
-      // const hash = await bcryptjs.hashSync(password, salt)
-      // const hash2 = await bcryptjs.hashSync(conf_password, salt)
-
-      // const minimum = 0
-      // const maximum = 999999
-      // const verificationToken = Math.floor(Math.random() * (maximum - minimum + 1)) + minimum
-
-      // insert in database
       await db.collection("events").insertOne({
-        name: name,
-        address: address,
-        start: start,
-        end: end,
-        description: description,
-        pde: pde,
+        name: publication.name,
+        address: publication.address,
+        start: publication.start,
+        end: publication.end,
+        description: publication.description,
+        pde: publication.pde,
         createdAt: createdAt,
       });
-
-      /* const emailHtml = "Your email verification code is: <b style='font-size: 30px;'>" + verificationToken + "</b>."
-            const emailPlain = "Your email verification code is: " + verificationToken + "."
-
-            transport.sendMail({
-                from: nodemailerFrom,
-                to: phone,
-                subject: "Email verification",
-                text: emailPlain,
-                html: emailHtml
-            }, function (error, info) {
-                console.log("Email sent: ", info)
-            })
-            */
-
       result.json({
         status: "success",
         message: "Event has been created.",
