@@ -1,10 +1,14 @@
-// include express framework
+// include express framework and cors module
 const express = require("express");
+const cors = require('cors');
 
 // create an instance of it
 const app = express();
+const corsOptions = {
+  origin: 'http://example.com'
+};
 
-// create http server from express instance
+app.use(cors(corsOptions));// create http server from express instance
 const http = require("http").createServer(app);
 
 // database module
@@ -15,6 +19,7 @@ const MongoClient = mongodb.MongoClient;
 
 // each Mongo document's unique ID
 const ObjectId = mongodb.ObjectId;
+
 // Add headers before the routes are defined
 app.use(function (req, res, next) {
   // Website you wish to allow to connect
@@ -93,7 +98,7 @@ const port = process.env.PORT || 3000;
 //! start the server at port 3000 (for local) or for hosting server port
 http.listen(port, function () {
   console.log("Server has been started at: " + port);
-
+ 
   //! connect with database
   MongoClient.connect("mongodb://localhost:27017", function (error, client) {
     if (error) {
@@ -621,3 +626,4 @@ http.listen(port, function () {
     });
   });
 });
+
