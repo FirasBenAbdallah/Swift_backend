@@ -60,26 +60,29 @@ const chats = require("./modules/chats");
 const nodemailer = require("nodemailer");
 const { KeyObject } = require("crypto");
 const { isKeyObject } = require("util/types");
-const nodemailerFrom = "contactvidoc@gmail.com"; //"doit4sim3@gmail.com";
+const nodemailerFrom = "doit4sim3@gmail.com";
 const transport = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 587,
   secure: false, // true pour TLS
   auth: {
-    user: "contactvidoc@gmail.com",
-    pass: "jdamnkrgupsizehj",
+    user: "doit4sim3@gmail.com",
+    pass: "fhputewhyygyzteq",
   },
 });
+
 /* const transport = nodemailer.createTransport({
- /*  host: "smtp.gmail.com",
+  host: "smtp.gmail.com",
   port: 2525, 
   service: "gmail",
   auth: {
     // user: "a8ecad9759966f",
     // pass: "27fc2618ee4761"
-    user: "doit4sim3@gmail.com",
-    pass: "fqvcjyqtowvhaydq",
+    ? user: "doit4sim3@gmail.com",
+    ? pass: "fqvcjyqtowvhaydq",
     // "ufmtxmtemtpqwdkd"
+    !! user: "contactvidoc@gmail.com",
+    !! pass: "jdamnkrgupsizehj", 
   },
 }); */
 
@@ -87,23 +90,25 @@ const transport = nodemailer.createTransport({
 global.apiUrl = "http://localhost:3000";
 const port = process.env.PORT || 3000;
 
-// start the server at port 3000 (for local) or for hosting server port
+//! start the server at port 3000 (for local) or for hosting server port
 http.listen(port, function () {
   console.log("Server has been started at: " + port);
 
-  // connect with database
+  //! connect with database
   MongoClient.connect("mongodb://localhost:27017", function (error, client) {
     if (error) {
       console.error(error);
       return;
     }
 
-    // database name
+    //! database name
     global.db = client.db("iOS-App");
     console.log("Connected to " + global.db.databaseName);
 
     contacts.init(app);
     chats.init(app);
+
+    //! verify account:
     app.post("/verifyAccount", async function (request, result) {
       const email = request.fields.email;
       const code = request.fields.code;
@@ -128,6 +133,7 @@ http.listen(port, function () {
           },
         ],
       });
+      console.log("user", user);
 
       if (user == null) {
         result.json({
@@ -159,6 +165,7 @@ http.listen(port, function () {
       });
     });
 
+    //! reset password of user:
     app.post("/resetPassword", async function (request, result) {
       //const email = request.fields.email
       const code = request.fields.code;
@@ -174,7 +181,7 @@ http.listen(port, function () {
         return;
       }
 
-      // update JWT of user in database
+      //* update JWT of user in database
       const user = await db.collection("users").findOne({
         $and: [
           {
@@ -219,6 +226,7 @@ http.listen(port, function () {
       });
     });
 
+    //! send email to user:
     app.post("/sendPasswordRecoveryEmail", async function (request, result) {
       const email = request.fields.email;
 
@@ -231,7 +239,7 @@ http.listen(port, function () {
         return;
       }
 
-      // update JWT of user in database
+      //* update JWT of user in database
       const user = await db.collection("users").findOne({
         email: email,
       });
@@ -261,11 +269,53 @@ http.listen(port, function () {
         }
       );
 
-      const emailHtml =
-        "Your password reset code is: <b style='font-size: 30px;'>" +
+      const emailHtml = `<!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Reset Your Password</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          h2, h3, p {
+            text-align: center;
+          }
+          .img-logo { 
+            border: 2px #796221;
+            border-style: double; 
+            border-radius: 50px;
+          }
+          .div1 {
+            max-width: 600px;
+            margin: 0 auto; 
+            background-color: #ffffff; 
+            padding: 30px;
+          }
+        </style>
+      </head>
+      <body style="background-color:#f6f6f6; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.5; padding: 20px;">
+        <div class="div1">
+          <div style="text-align: center;">
+            <img src="https://i.ibb.co/ZgPsrHH/do-removebg-preview.png" alt="do-removebg-preview" class="img-logo"> 
+          </div>
+          <h2 style="font-size: 24px; font-weight: bold; margin-bottom: 20px;">Reset Your Password</h2>
+          <p style="margin-bottom: 20px;">You recently requested a password reset. Please use the following code to reset your password:</p>
+          <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 20px;">
+          CODE: 
+          <span style="color: #796221; font-size: 20px;">${randomNumber}</span>
+          </h3>
+          <p style="margin-bottom: 20px;">If you didn't request a password reset, please ignore this email.</p>
+          <p style="margin-bottom: 20px;">Thank you,</p>
+          <p style="font-weight: bold;">Do it!</p>
+
+        </div>
+      </body>
+      </html>
+      `;
+      /*  const emailHtml =
+        "Your password reset code is: <b style='font-size: 30px; color: red'>" +
         randomNumber +
-        "</b>.";
-      const emailPlain = "Your password reset code is: " + randomNumber + ".";
+        "</b>." */
+      const emailPlain = "Reset code is: " + randomNumber + ".";
 
       let mailOptions = {
         from: nodemailerFrom,
@@ -273,10 +323,9 @@ http.listen(port, function () {
         subject: "Password reset code",
         text: emailPlain,
         html: emailHtml,
+        encoding: "utf-8",
       };
-      // void function (error, info) {
-      //     console.log("Mail sent: ", info)
-      // }
+
       // Send the email
       transport.sendMail(mailOptions, (error, info) => {
         if (error) {
@@ -292,7 +341,7 @@ http.listen(port, function () {
       });
     });
 
-    // route for logout request
+    //! Logout:
     app.post("/logout", auth, async function (request, result) {
       const user = request.user;
 
@@ -314,6 +363,7 @@ http.listen(port, function () {
       });
     });
 
+    //! Post user profile:
     app.post("/getUser", auth, async function (request, result) {
       const user = request.user;
 
@@ -324,6 +374,7 @@ http.listen(port, function () {
       });
     });
 
+    //! Get user profile:
     app.get("/getuser", async function (request, result) {
       const users = await db.collection("users").find().toArray();
       result.send({
@@ -331,7 +382,7 @@ http.listen(port, function () {
       });
     });
 
-    // route for login requests
+    //! Login:
     app.post("/login", async function (request, result) {
       // get values from login form
       const phone = request.fields.phone;
@@ -346,7 +397,7 @@ http.listen(port, function () {
         return;
       }
 
-      // check if email exists
+      //* check if email exists
       const user = await db.collection("users").findOne({
         phone: phone,
       });
@@ -415,6 +466,7 @@ http.listen(port, function () {
       console.log("Password is not correct.");
     });
 
+    //! Signup:
     app.post("/signup", async function (request, result) {
       const name = request.fields.name;
       const phone = request.fields.phone;
@@ -494,6 +546,7 @@ http.listen(port, function () {
       console.log("Account has been created.");
     });
 
+    //! Event Schema:
     const mongoose = require("mongoose");
     const Publication = mongoose.model("Event", {
       name: {
@@ -515,6 +568,7 @@ http.listen(port, function () {
         type: String,
       },
     });
+    //! Add event:
     app.post("/addevent", async (request, result) => {
       const publication = new Publication({
         name: request.fields.name,
@@ -556,6 +610,7 @@ http.listen(port, function () {
       console.log("Event has been created.");
     });
 
+    //! Get event:
     app.get("/getevent", async function (request, result) {
       const events = await db.collection("events").find().toArray();
       result.send({
