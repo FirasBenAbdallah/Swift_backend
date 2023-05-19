@@ -1,7 +1,7 @@
 
 const mongoose = require("mongoose");
 const { schema, model } = mongoose;
-module.exports = {
+
 const publication2 = new schema(
   {
     name: {
@@ -26,6 +26,6 @@ const publication2 = new schema(
 /*   {
     timestamps: true,
   } */
-);
+)
 
-};
+export default publication2
