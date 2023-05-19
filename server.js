@@ -1,14 +1,15 @@
 // include express framework and cors module
 const express = require("express");
-const cors = require('cors');
-
+const cors = require("cors");
+//const publicationRoute2 = require("./modules/publication2.js");
+//import publicationRoute2 from "./modules/publication2.js";
 // create an instance of it
 const app = express();
 const corsOptions = {
-  origin: 'http://example.com'
+  origin: "http://example.com",
 };
 
-app.use(cors(corsOptions));// create http server from express instance
+app.use(cors(corsOptions)); // create http server from express instance
 const http = require("http").createServer(app);
 
 // database module
@@ -71,8 +72,8 @@ const transport = nodemailer.createTransport({
   port: 587,
   secure: false, // true pour TLS
   auth: {
-    user: "doit4sim3@gmail.com",
-    pass: "fhputewhyygyzteq",
+    user: "doitsim2223@gmail.com",
+    pass: "nyhuyudwemusdxfd",
   },
 });
 
@@ -88,6 +89,9 @@ const transport = nodemailer.createTransport({
     // "ufmtxmtemtpqwdkd"
     !! user: "contactvidoc@gmail.com",
     !! pass: "jdamnkrgupsizehj", 
+
+    ?user: "doit4sim3@gmail.com",
+    ?pass: "fhputewhyygyzteq",
   },
 }); */
 
@@ -98,7 +102,7 @@ const port = process.env.PORT || 3000;
 //! start the server at port 3000 (for local) or for hosting server port
 http.listen(port, function () {
   console.log("Server has been started at: " + port);
- 
+
   //! connect with database
   MongoClient.connect("mongodb://localhost:27017", function (error, client) {
     if (error) {
@@ -250,7 +254,7 @@ http.listen(port, function () {
       });
 
       if (user == null) {
-        result.json({
+        result.status(404).json({
           status: "error",
           message: "Email does not exists.",
         });
@@ -347,25 +351,51 @@ http.listen(port, function () {
     });
 
     //! Logout:
-    app.post("/logout", auth, async function (request, result) {
-      const user = request.user;
+    app.post("/logout", async function (request, result) {
+      const phone = request.fields.phone;
+      const users = await db.collection("users").findOne({
+        phone: phone,
+      });
 
-      // update JWT of user in database
-      await db.collection("users").findOneAndUpdate(
-        {
-          _id: user._id,
-        },
-        {
-          $set: {
-            accessToken: "",
+      console.log(users.accessToken);
+
+      if (users.accessToken == "") {
+        result.json({
+          status: "error",
+          message: "User is already logged out.",
+        });
+        console.log("User is already logged out.");
+      } else {
+        // update JWT of user in database
+        await db.collection("users").findOneAndUpdate(
+          {
+            phone: phone,
           },
-        }
-      );
+          {
+            $set: {
+              accessToken: "",
+            },
+          }
+        );
+        result.json({
+          status: "success",
+          message: "Logout successfully.",
+        });
+        console.log("Logout successfully.");
+      }
+    });
+
+    app.post("/getOneUser", async function (request, result) {
+      const phone = request.fields.phone;
+      const users = await db.collection("users").findOne({
+        phone: phone,
+      });
 
       result.json({
         status: "success",
-        message: "Logout successfully.",
+        message: users,
       });
+      console.log(users);
     });
 
     //! Post user profile:
@@ -581,9 +611,13 @@ http.listen(port, function () {
         start: request.fields.start,
         end: request.fields.end,
         description: request.fields.description,
-        pde: request.params.pde,
+        pde: request.fields.pde,
       });
       const createdAt = new Date().getTime();
+
+      /* const event = await db.collection("events").findOne({
+        name: name,
+      }); */
 
       if (
         !publication.name ||
@@ -599,23 +633,36 @@ http.listen(port, function () {
         console.log("Please enter all values of this event.");
         return;
       }
-      await db.collection("events").insertOne({
-        name: publication.name,
-        address: publication.address,
-        start: publication.start,
-        end: publication.end,
-        description: publication.description,
-        pde: publication.pde,
-        createdAt: createdAt,
-      });
-      result.json({
-        status: "success",
-        message: "Event has been created.",
-      });
-      console.log("Event has been created.");
+
+      db.collection("events")
+        .insertOne({
+          name: publication.name,
+          address: publication.address,
+          start: publication.start,
+          end: publication.end,
+          description: publication.description,
+          pde: publication.pde,
+          createdAt: createdAt,
+        })
+        .then(() => {
+          result.json({
+            status: "success",
+            message: "Event has been created.",
+          });
+          console.log("Event has been created. Name:", publication.pde);
+        })
+        .catch((error) => {
+          result.json({
+            status: "error",
+            message: "Failed to create event.",
+          });
+          console.log("Failed to create event:", error);
+        });
     });
+    //app.use("/publication2", publicationRoute2);
 
     //! Get event:
+    /*
     app.get("/getevent", async function (request, result) {
       const events = await db.collection("events").find().toArray();
       result.send({
@@ -624,6 +671,36 @@ http.listen(port, function () {
         message: JSON.stringify(events),
       });
     });
+    */
+    app.get("/getevent", async function (request, result) {
+      try {
+        const page = parseInt(request.query.page) || 1;
+        const pageSize = parseInt(request.query.pageSize) || 100;
+        const skip = (page - 1) * pageSize;
+        const totalEvents = await db.collection("events").countDocuments();
+        const events = await db
+          .collection("events")
+          .find()
+          .skip(skip)
+          .limit(pageSize)
+          .toArray();
+        result.send({
+          events: events,
+          totalEvents: totalEvents,
+          page: page,
+          pageSize: pageSize,
+          status: "success",
+          message: JSON.stringify(events),
+        });
+        //console.log(events);
+        console.log("Succsess Home");
+      } catch (error) {
+        console.error(error);
+        result.send({
+          status: "error",
+          message: error.message,
+        });
+      }
+    });
   });
 });
-

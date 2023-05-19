@@ -6,7 +6,7 @@ const ObjectId = mongodb.ObjectId
 module.exports = async function (request, result, next) {
     try {
         
-        const accessToken = request.headers.authorization.split(" ")[1]
+        const accessToken = request.headers.authorization.split("")[1]
         const decoded = jwt.verify(accessToken, jwtSecret)
         const userId = decoded.userId
  
